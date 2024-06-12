@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konversi Gambar ke PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter&family=Manrope:wght@500&family=Montserrat:ital,wght@0,500;0,600;0,700;0,800;1,800&family=Mulish:wght@300;700&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        font-family: "Open Sans", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5fa;
+    }
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 1000px;
+        margin: 50px auto;
+        background-color: #f5f5fac1;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .upload-btn {
+        display: block;
+        width: fit-content;
+        padding: 24px 48px;
+        margin: 20px auto;
+        border: none;
+        background-color: #0073e6;
+        color: #fff;
+        font-size: 24px;
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    .upload-btn:hover {
+        background-color: #005bb5;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .selected-file {
+        margin-top: 10px;
+        text-align: center; /* Pusatkan teks */
+        font-family: 'Montserrat', sans-serif; /* Ganti font */
+    }
+
+    #image-preview {
+        max-width: 100%;
+        text-align: center;
+        height: auto;
+        display: none;
+        margin-top: 20px;
+        align-self: center;
+    }
+
+    /* CSS untuk menengahkan kamera dan tombol ambil gambar */
+    video {
+        display: block;
+        margin: 20px auto;
+    }
+
+    #capture-btn {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 20px;
+        background-color: #e5322d;
+        color: #fff;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    #capture-btn:hover {
+        background-color: #c22d29;
+    }
+    img {
+        width: 300px;
+        height: 300px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Deteksi Telapak Tangan </h1>
+    <form id="upload-form" action="prediction" method="POST" enctype="multipart/form-data">
+        <label for="file-input" class="upload-btn">Pilih Gambar Tangan</label>
+        <input type="file" id="file-input" accept="image/*" name="img">
+        <div class="selected-file" id="selected-file"></div>
+        <img id="image-preview" alt="Preview Gambar">
+        <button type="submit" class="upload-btn" id="convert-btn">Prediction</button>
+         <!--<button type="button" class="upload-btn" id="camera-btn">Ambil dari Kamera</button> -->
+    </form>
+</div>
+
+<script>
+    document.getElementById('file-input').addEventListener('change', function() {
+        const fileInput = document.getElementById('file-input');
+        const selectedFile = document.getElementById('selected-file');
+        const imagePreview = document.getElementById('image-preview');
+        const convertBtn = document.getElementById('convert-btn');
+
+        if (fileInput.files.length > 0) {
+            const fileName = fileInput.files[0].name;
+            selectedFile.innerHTML = 'File yang dipilih: <span>' + fileName + '</span>';
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(fileInput.files[0]);
+            convertBtn.disabled = false;
+        } else {
+            selectedFile.textContent = '';
+            imagePreview.style.display = 'none';
+            convertBtn.disabled = true;
+        }
+    });
+
+    document.getElementById('camera-btn').addEventListener('click', async function() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.style.width = '10%'; // Lebar video mengisi wadah
+        document.body.appendChild(video);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        video.addEventListener('loadedmetadata', function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        });
+
+        video.addEventListener('play', function() {
+            const drawFrame = () => {
+                if (video.paused || video.ended) {
+                    return;
+                }
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                requestAnimationFrame(drawFrame);
+            };
+            drawFrame();
+        });
+
+        const captureBtn = document.createElement('button');
+        captureBtn.textContent = 'Ambil Gambar';
+        captureBtn.id = 'capture-btn';
+        captureBtn.addEventListener('click', function() {
+            const imgData = canvas.toDataURL('image/jpeg');
+            const imgPreview = document.getElementById('image-preview');
+            imgPreview.src = imgData;
+            imgPreview.style.display = 'block';
+            video.srcObject.getTracks().forEach(track => track.stop());
+            stream.getTracks().forEach(track => track.stop());
+        });
+
+        document.body.appendChild(captureBtn);
+    });
+</script>
+
+</body>
+</html>
